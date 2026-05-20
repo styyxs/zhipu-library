@@ -1,8 +1,6 @@
 /**
  * canvas.js - 画布+SVG轮廓
  */
-const API_BASE = 'https://ollie-zhipu-library.962324377.workers.dev';
-
 const Canvas = {
   canvas: null, ctx: null,
   isDrawing: false,
@@ -133,7 +131,7 @@ const Canvas = {
     const prompts = { orchard: 'in an orchard', farm: 'on a farm', forest: 'in a forest' };
     const prompt = `A cute cartoon ${word}, child-friendly style, vibrant colors, Studio Ghibli inspired, ${prompts[scene] || ''}`;
     try {
-      const response = await fetch(`${API_BASE}/api/image`, {
+      const response = await fetch('https://ollie-zhipu-library.962324377.workers.dev/api/image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, size: '1024x1024' })
