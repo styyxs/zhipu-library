@@ -1,0 +1,127 @@
+/**
+ * Cloudflare Worker - MiniMax API代理
+ * 解决CORS问题 + 隐藏API Key
+ */
+
+const MINIMAX_API_BASE = 'https://api.minimax.io';
+
+// TTS语音合成
+async function handleTTS(request) {
+  const { text, voice = 'AnAnnie', speed = 0.9 } = await request.json();
+  
+  const apiKey = MINIMAX_API_KEY; // 从环境变量读取
+  
+  const response = await fetch(`${MINIMAX_API_BASE}/v1/t2a_v2`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'speech-02-hd',
+      text: text,
+      stream: false,
+      voice_setting: {
+        voice_id: voice,
+        speed: speed
+      }
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.text();
+    return new Response(JSON.stringify({ error }), { status: 500 });
+  }
+  
+  const audioData = await response.arrayBuffer();
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(audioData)));
+  
+  return new Response(JSON.stringify({
+    audioData: base64
+  }), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+// AI图片生成
+async function handleImage(request) {
+  const { prompt, size = '1024x1024' } = await request.json();
+  
+  const apiKey = MINIMAX_API_KEY;
+  
+  const response = await fetch(`${MINIMAX_API_BASE}/v1/images/generations`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'image-01',
+      prompt: prompt,
+      size: size,
+      n: 1
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.text();
+    return new Response(JSON.stringify({ error }), { status: 500 });
+  }
+  
+  const data = await response.json();
+  
+  return new Response(JSON.stringify({
+    imageUrl: data.data?.[0]?.url || ''
+  }), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+// 路由分发
+async function router(request) {
+  const url = new URL(request.url);
+  const path = url.pathname;
+  
+  // CORS预检
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      }
+    });
+  }
+  
+  try {
+    if (path === '/api/tts') {
+      return await handleTTS(request);
+    } else if (path === '/api/image') {
+      return await handleImage(request);
+    } else {
+      return new Response(JSON.stringify({ error: 'Not found' }), { status: 404 });
+    }
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+  }
+}
+
+// 主入口
+export default {
+  async fetch(request, env) {
+    // 设置全局API Key
+    globalThis.MINIMAX_API_KEY = env.MINIMAX_API_KEY || '';
+    
+    // 处理请求
+    const response = await router(request);
+    
+    // 添加CORS头
+    const newHeaders = new Headers(response.headers);
+    newHeaders.set('Access-Control-Allow-Origin', '*');
+    
+    return new Response(response.body, {
+      status: response.status,
+      headers: newHeaders
+    });
+  }
+};
