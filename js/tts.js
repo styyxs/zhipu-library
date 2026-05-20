@@ -2,7 +2,7 @@
  * tts.js - TTS语音合成（MiniMax API + Web Speech API降级）
  * API_BASE只在这里声明，其他文件用完整URL
  */
-const API_BASE = 'https://ollie-zhipu-library.962324377.workers.dev';
+const API_BASE = 'https://ollie-mimi-api.962324377.workers.dev';
 
 const TTS = {
   cache: {},
