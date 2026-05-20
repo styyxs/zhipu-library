@@ -1,0 +1,547 @@
+/* ========================================
+   Ollie和Mimi学英语 - 样式表
+   ======================================== */
+
+:root {
+  --color-pink: #FFB6C1;
+  --color-sky: #87CEEB;
+  --color-yellow: #FFD700;
+  --color-purple: #9370DB;
+  --color-orange: #FF6B35;
+  --color-green: #90EE90;
+  --color-bg: #FFF8F0;
+  --font-size-large: 28px;
+  --font-size-medium: 20px;
+  --border-radius: 24px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: var(--color-bg);
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  max-width: 430px;
+  margin: 0 auto;
+  height: 100%;
+  position: relative;
+}
+
+/* ====== 页面通用 ====== */
+.page {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.page.active {
+  display: flex;
+}
+
+/* ====== 首页 ====== */
+.home-bg {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--color-sky) 0%, var(--color-bg) 100%);
+  z-index: -1;
+}
+
+.home-header {
+  text-align: center;
+  margin-top: 40px;
+  margin-bottom: 30px;
+}
+
+.home-title {
+  font-size: 32px;
+  color: var(--color-purple);
+  font-weight: bold;
+  text-shadow: 2px 2px 0 rgba(255,255,255,0.5);
+}
+
+.home-subtitle {
+  font-size: 16px;
+  color: #666;
+  margin-top: 8px;
+}
+
+.scene-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+  padding: 0 8px;
+}
+
+.scene-card {
+  background: white;
+  border-radius: var(--border-radius);
+  padding: 20px 12px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 3px solid transparent;
+}
+
+.scene-card:active {
+  transform: scale(0.95);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+.scene-card.selected {
+  border-color: var(--color-yellow);
+}
+
+.scene-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.scene-name {
+  font-size: var(--font-size-medium);
+  color: #333;
+  font-weight: bold;
+}
+
+.scene-progress {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+}
+
+.scene-card.locked {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  display: flex;
+  justify-content: space-around;
+  background: white;
+  padding: 12px 0;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.05);
+  border-radius: 24px 24px 0 0;
+}
+
+.nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #999;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.2s;
+  background: none;
+  border: none;
+}
+
+.nav-btn.active {
+  color: var(--color-purple);
+}
+
+.nav-btn-icon {
+  font-size: 24px;
+}
+
+/* ====== Step页面通用 ====== */
+.step-page {
+  justify-content: flex-start;
+  padding-top: 20px;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.back-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: white;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-indicator {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.step-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ddd;
+}
+
+.step-dot.active {
+  background: var(--color-purple);
+}
+
+/* ====== Mimi角色 ====== */
+.mimi-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.mimi-character {
+  font-size: 120px;
+  animation: mimiBounce 2s ease-in-out infinite;
+}
+
+@keyframes mimiBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.mimi-dialogue {
+  background: white;
+  border-radius: var(--border-radius);
+  padding: 16px 24px;
+  margin-top: 16px;
+  max-width: 85%;
+  font-size: var(--font-size-medium);
+  color: #333;
+  box-shadow: var(--shadow);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ====== 单词展示 ====== */
+.word-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 30px 0;
+}
+
+.word-letters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.letter {
+  font-size: 48px;
+  font-weight: bold;
+  color: var(--color-purple);
+  animation: letterPop 0.3s ease-out backwards;
+}
+
+@keyframes letterPop {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.word-emoji {
+  font-size: 100px;
+  margin-top: 20px;
+}
+
+.word-spelling {
+  font-size: 14px;
+  color: #999;
+  margin-top: 8px;
+}
+
+/* ====== 录音按钮 ====== */
+.record-btn-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 40px 0;
+}
+
+.record-btn {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-yellow) 0%, var(--color-orange) 100%);
+  border: none;
+  font-size: 48px;
+  cursor: pointer;
+  box-shadow: 0 8px 32px rgba(255,107,53,0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.record-btn.waiting {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.record-btn.recording {
+  animation: recording 0.5s ease-in-out infinite;
+  background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+}
+
+@keyframes recording {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.record-hint {
+  margin-top: 16px;
+  font-size: 14px;
+  color: #999;
+}
+
+.volume-indicator {
+  display: flex;
+  gap: 4px;
+  margin-top: 12px;
+  height: 20px;
+  align-items: flex-end;
+}
+
+.volume-bar {
+  width: 6px;
+  background: var(--color-orange);
+  border-radius: 3px;
+  transition: height 0.1s;
+}
+
+/* ====== 星星评分 ====== */
+.stars-container {
+  position: relative;
+  width: 300px;
+  height: 300px;
+}
+
+.star {
+  position: absolute;
+  font-size: 24px;
+  animation: starExplode 1s ease-out forwards;
+}
+
+@keyframes starExplode {
+  0% { transform: translate(0, 0) scale(0); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(1); opacity: 0; }
+}
+
+.success-text {
+  font-size: 32px;
+  color: var(--color-orange);
+  font-weight: bold;
+  margin-top: 20px;
+}
+
+/* ====== 画画页面 ====== */
+.canvas-container {
+  width: 100%;
+  max-width: 350px;
+  aspect-ratio: 1;
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin: 20px 0;
+  touch-action: none;
+}
+
+#drawCanvas {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.color-palette {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.color-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.color-btn.selected {
+  border-color: #333;
+  transform: scale(1.1);
+}
+
+.tool-btns {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.tool-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: background 0.2s;
+}
+
+.tool-btn.active {
+  background: var(--color-yellow);
+}
+
+.canvas-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.action-btn {
+  padding: 12px 24px;
+  border-radius: 24px;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.action-btn:active {
+  transform: scale(0.95);
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, var(--color-yellow) 0%, var(--color-orange) 100%);
+  color: white;
+  font-weight: bold;
+}
+
+/* ====== 探险日记 ====== */
+.diary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 16px 0;
+  width: 100%;
+}
+
+.diary-item {
+  aspect-ratio: 1;
+  background: white;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+}
+
+.diary-item.completed {
+  background: linear-gradient(135deg, var(--color-pink) 0%, var(--color-purple) 100%);
+}
+
+.diary-word {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+}
+
+.diary-image {
+  font-size: 28px;
+}
+
+/* ====== Toast提示 ====== */
+.toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 16px 32px;
+  border-radius: 16px;
+  font-size: 16px;
+  z-index: 1000;
+  animation: toastFade 2s ease-out forwards;
+}
+
+@keyframes toastFade {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+  20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ====== 加载动画 ====== */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--color-pink);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ====== 响应式 ====== */
+@media (max-height: 700px) {
+  .mimi-character { font-size: 80px; }
+  .word-emoji { font-size: 72px; }
+  .letter { font-size: 36px; }
+}
