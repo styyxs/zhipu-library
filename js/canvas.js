@@ -1,7 +1,7 @@
 /**
  * canvas.js - 画布+SVG轮廓
  */
-const API_BASE = 'https://ollie-mimi-api.962324377.workers.dev';
+const API_BASE = 'https://ollie-zhipu-library.962324377.workers.dev';
 
 const Canvas = {
   canvas: null, ctx: null,
