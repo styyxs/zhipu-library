@@ -59,9 +59,14 @@ const App = {
     
     showTextImmediate('step1Dialogue', `Ollie，我在${sceneName}里学了一个新单词！`);
     await this.delay(1000);
-    
+
     const spelling = word.word.toUpperCase().split('').join('-');
-    await TTS.speak(`${spelling}, ${word.word}`, { callback: () => this.showStep1Word(word) });
+    try {
+      await TTS.speak(`${spelling}, ${word.word}`, { callback: () => this.showStep1Word(word) });
+    } catch (e) {
+      console.log('TTS failed, continue anyway:', e);
+      this.showStep1Word(word);
+    }
   },
   
   async showStep1Word(word) {
@@ -79,13 +84,13 @@ const App = {
     document.getElementById('wordImage').textContent = word.emoji;
     await this.delay(1500);
     showTextImmediate('step1Dialogue', '太棒了！你听到了吗？');
-    await TTS.speak('太棒了！你听到了吗？', { callback: () => this.delay(1000).then(() => this.goToStep(2)) });
+    await TTS.speak('太棒了！你听到了吗？', { callback: () => this.delay(1000).then(() => this.goToStep(2)) }).catch(() => this.delay(2000).then(() => this.goToStep(2)));
   },
   
   // Step2: Ollie跟读
   async runStep2() {
     showTextImmediate('step2Dialogue', '你跟我念一遍好吗？按住按钮说话哦~');
-    await TTS.speak('你跟我念一遍好吗？按住按钮说话哦~');
+    try { await TTS.speak('你跟我念一遍好吗？按住按钮说话哦~'); } catch {}
     
     const recordBtn = document.getElementById('recordBtn');
     recordBtn.classList.add('waiting');
@@ -153,13 +158,13 @@ const App = {
         star.style.cssText = `left:150px;top:150px;--tx:${(Math.random()-0.5)*300}px;--ty:${(Math.random()-0.5)*300}px;animation-delay:${Math.random()*0.5}s;position:absolute;font-size:24px;`;
         content.appendChild(star);
       }
-      await TTS.speak('发音太棒了！');
+      await TTS.speak('发音太棒了！').catch(() => {});
       await this.delay(1500);
       this.goToStep(4);
     } else {
       // 失败，循环Step2
       content.innerHTML = '<div class="mimi-character">🐱</div><div class="mimi-dialogue" style="margin-top:20px;">再试一次吧，你可以的！</div>';
-      await TTS.speak('再试一次吧，你可以的！');
+      await TTS.speak('再试一次吧，你可以的！').catch(() => {});
       await this.delay(1500);
       this.goToStep(2);
     }
@@ -191,14 +196,14 @@ const App = {
   // Step4: Ollie教Mimi
   async runStep4() {
     showTextImmediate('step4Dialogue', 'Ollie，这个用中文怎么说呀？');
-    await TTS.speak('Ollie，这个用中文怎么说呀？');
+    await TTS.speak('Ollie，这个用中文怎么说呀？').catch(() => {});
     
     const btn = document.getElementById('step4RecordBtn');
     btn.classList.add('waiting');
     this.bindRecordEvents(btn, async () => {
       const zh = getWordZH(this.currentWord.word);
       showTextImmediate('step4Dialogue', `原来是${zh}呀！Ollie真棒！`);
-      await TTS.speak(`原来是${zh}呀！Ollie真棒！`);
+      await TTS.speak(`原来是${zh}呀！Ollie真棒！`).catch(() => {});
       await this.delay(1000);
       this.goToStep(5);
     });
@@ -208,7 +213,7 @@ const App = {
   async runStep5() {
     const word = this.currentWord;
     showToast(`我们来画一个${word.word}吧！`);
-    await TTS.speak(`我们来画一个${word.word}吧！`);
+    await TTS.speak(`我们来画一个${word.word}吧！`).catch(() => {});
     
     Canvas.init();
     Canvas.clear();
@@ -225,7 +230,7 @@ const App = {
     Storage.markWordComplete(scene, word.word);
     
     showToast(`太棒了！${word.word}画好了！🎨`);
-    await TTS.speak(`太棒了！${word.word}画好了！`);
+    await TTS.speak(`太棒了！${word.word}画好了！`).catch(() => {});
     
     updateSceneProgress();
     this.currentWordIndex++;
@@ -277,5 +282,5 @@ window.finishDrawing = () => App.finishDrawing();
 window.clearCanvas = () => { Canvas.clear(); Canvas.drawOutline(App.currentWord?.word); };
 window.replayWord = async () => {
   const w = App.currentWord;
-  if (w) await TTS.speak(`${w.word.toUpperCase().split('').join('-')}, ${w.word}`);
+  if (w) await TTS.speak(`${w.word.toUpperCase().split('').join('-')}, ${w.word}`).catch(() => {});
 };
