@@ -1,5 +1,5 @@
 /**
- * canvas.js - 画布+SVG轮廓
+ * canvas.js - 画布功能+30个SVG轮廓内嵌
  */
 const Canvas = {
   canvas: null, ctx: null,
@@ -38,7 +38,7 @@ const Canvas = {
     butterfly: "M 130 220 C 100 180, 110 130, 150 130 C 190 130, 200 180, 175 220 C 150 260, 160 310, 200 310 C 240 310, 250 260, 220 220 C 190 180, 200 130, 240 130 C 280 130, 290 180, 260 220 C 230 260, 240 310, 280 310 C 320 310, 330 260, 300 220",
     bee: "M 175 180 C 145 180, 120 210, 120 250 C 120 290, 155 320, 195 320 C 240 320, 270 290, 270 250 C 270 210, 240 180, 175 180 Z"
   },
-  
+
   init() {
     this.canvas = document.getElementById('drawCanvas');
     if (!this.canvas) return;
@@ -50,12 +50,12 @@ const Canvas = {
     this.ctx.lineCap = 'round';
     this.setupColorPalette();
   },
-  
+
   setupColorPalette() {
     const palette = document.getElementById('colorPalette');
     if (!palette) return;
     palette.innerHTML = '';
-    const colors = ['#FF0000','#FFA500','#FFFF00','#008000','#0000FF','#800080'];
+    const colors = ['#FF0000', '#FFA500', '#FFFF00', '#008000', '#0000FF', '#800080'];
     colors.forEach((color, i) => {
       const btn = document.createElement('button');
       btn.className = 'color-btn' + (i === 0 ? ' selected' : '');
@@ -69,13 +69,15 @@ const Canvas = {
       palette.appendChild(btn);
     });
   },
-  
+
   clear() {
+    if (!this.ctx) return;
     this.ctx.fillStyle = '#FFFFFF';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   },
-  
+
   drawOutline(word) {
+    if (!this.ctx) return;
     const path = this.outlines[word];
     if (!path) return;
     this.ctx.save();
@@ -85,16 +87,18 @@ const Canvas = {
     this.ctx.stroke(path2d);
     this.ctx.restore();
   },
-  
-  erase() { this.ctx.strokeStyle = '#FFFFFF'; },
-  
+
+  erase() {
+    if (this.ctx) this.ctx.strokeStyle = '#FFFFFF';
+  },
+
   startDrawing(e) {
     e.preventDefault();
     this.isDrawing = true;
     const pos = this.getPos(e);
     this.lastX = pos.x; this.lastY = pos.y;
   },
-  
+
   draw(e) {
     if (!this.isDrawing) return;
     e.preventDefault();
@@ -105,18 +109,19 @@ const Canvas = {
     this.ctx.stroke();
     this.lastX = pos.x; this.lastY = pos.y;
   },
-  
+
   stopDrawing() { this.isDrawing = false; },
-  
+
   getPos(e) {
     const rect = this.canvas.getBoundingClientRect();
     const touch = e.touches ? e.touches[0] : e;
     return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
   },
-  
+
   getImageData() { return this.canvas.toDataURL('image/png'); },
-  
+
   attachEvents() {
+    if (!this.canvas) return;
     this.canvas.addEventListener('touchstart', e => this.startDrawing(e), { passive: false });
     this.canvas.addEventListener('touchmove', e => this.draw(e), { passive: false });
     this.canvas.addEventListener('touchend', () => this.stopDrawing());
@@ -125,7 +130,7 @@ const Canvas = {
     this.canvas.addEventListener('mouseup', () => this.stopDrawing());
     this.canvas.addEventListener('mouseleave', () => this.stopDrawing());
   },
-  
+
   async generateAIImage(word, scene) {
     const imageData = this.getImageData();
     const prompts = { orchard: 'in an orchard', farm: 'on a farm', forest: 'in a forest' };

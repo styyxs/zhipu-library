@@ -1,57 +1,61 @@
 /**
- * speech.js - 语音识别
+ * speech.js - 语音识别（浏览器原生webkitSpeechAPI）
  */
 const Speech = {
-  isSupported: false,
-  isListening: false,
   recognition: null,
-  
+  lastTranscript: '',
+  isListening: false,
+  onResult: null,
+
+  checkPermission() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      console.log('Speech recognition not supported');
+    }
+  },
+
   init() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
-    
-    this.recognition = new SR();
-    this.recognition.continuous = false;
-    this.recognition.interimResults = true;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    this.recognition = new SpeechRecognition();
     this.recognition.lang = 'en-US';
-    
-    this.recognition.onresult = (e) => {
-      const result = e.results[e.results.length - 1];
-      if (result.isFinal && this.onResult) {
-        this.onResult(result[0].transcript, result[0].confidence);
-      }
+    this.recognition.continuous = false;
+    this.recognition.interimResults = false;
+    this.recognition.maxAlternatives = 1;
+
+    this.recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      this.lastTranscript = transcript.trim();
+      if (this.onResult) this.onResult(this.lastTranscript);
     };
-    
-    this.recognition.onerror = (e) => { this.isListening = false; };
-    this.recognition.onend = () => { this.isListening = false; };
-    this.isSupported = true;
+
+    this.recognition.onerror = (event) => {
+      console.log('Speech recognition error:', event.error);
+      this.isListening = false;
+    };
+
+    this.recognition.onend = () => {
+      this.isListening = false;
+    };
   },
-  
+
   startListening(onResult) {
-    if (!this.isSupported) return false;
-    if (this.isListening) this.stopListening();
-    this.onResult = onResult;
-    this.recognition.start();
+    if (!this.recognition) this.init();
+    if (!this.recognition) return;
+    this.onResult = onResult || null;
+    this.lastTranscript = '';
     this.isListening = true;
-    return true;
-  },
-  
-  stopListening() {
-    if (this.recognition && this.isListening) {
-      this.recognition.stop();
+    try {
+      this.recognition.start();
+    } catch (e) {
+      console.log('Recognition start error:', e);
       this.isListening = false;
     }
   },
-  
-  getVolumeLevel() { return Math.random() * 0.5 + 0.3; }
-};
 
-Speech.init();
-
-Speech.checkPermission = async () => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach(t => t.stop());
-    return true;
-  } catch { return false; }
+  stopListening() {
+    if (this.recognition && this.isListening) {
+      try { this.recognition.stop(); } catch {}
+    }
+    this.isListening = false;
+  }
 };

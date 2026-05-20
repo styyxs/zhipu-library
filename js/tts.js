@@ -1,5 +1,6 @@
 /**
- * tts.js - 语音合成
+ * tts.js - TTS语音合成（MiniMax API + Web Speech API降级）
+ * API_BASE只在这里声明，其他文件用完整URL
  */
 const API_BASE = 'https://ollie-zhipu-library.962324377.workers.dev';
 
@@ -20,7 +21,7 @@ const TTS = {
       await this.minimaxSpeak(text, { speed, callback, cacheKey });
     } catch (e) {
       console.log('TTS fallback to Web Speech API:', e.message);
-      await this.webSpeechSpeak(text, { speed, callback });
+      await this.webSpeechSpeak(text, { speed, callback }).catch(() => {});
     }
   },
 
@@ -42,22 +43,14 @@ const TTS = {
   },
 
   async webSpeechSpeak(text, options = {}) {
-    return new Promise((resolve, reject) => {
-      if (!window.speechSynthesis) {
-        reject(); return;
-      }
-      // 停止之前的语音
+    return new Promise((resolve) => {
+      if (!window.speechSynthesis) { resolve(); return; }
       window.speechSynthesis.cancel();
-      
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'zh-CN';
       utterance.rate = options.speed || 0.9;
       utterance.onend = () => { this.isPlaying = false; options.callback?.(); resolve(); };
-      utterance.onerror = (e) => { 
-        console.log('Web Speech error:', e);
-        this.isPlaying = false; 
-        reject(); 
-      };
+      utterance.onerror = () => { this.isPlaying = false; resolve(); };
       this.isPlaying = true;
       window.speechSynthesis.speak(utterance);
     });
@@ -66,7 +59,7 @@ const TTS = {
   playAudio(audio, callback) {
     return new Promise((resolve, reject) => {
       audio.onended = () => { this.isPlaying = false; callback?.(); resolve(); };
-      audio.onerror = () => { this.isPlaying = false; reject(); };
+      audio.onerror = () => { this.isPlaying = false; reject(new Error('Audio play failed')); };
       this.isPlaying = true;
       audio.play().catch(reject);
     });

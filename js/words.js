@@ -1,5 +1,5 @@
 /**
- * words.js - 单词数据
+ * words.js - 单词数据管理
  */
 const WORDS_DATA = {
   orchard: [

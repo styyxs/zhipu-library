@@ -1,5 +1,5 @@
 /**
- * dialog.js - 对话模板
+ * dialog.js - 对话模板引擎
  */
 const Dialog = {
   step1: {
@@ -17,7 +17,7 @@ const Dialog = {
   },
   step4: {
     question: (word) => `Ollie，这个用中文怎么说呀？`,
-    thanks: (zh) => `原来是${zh}呀！ Ollie真棒！`
+    thanks: (zh) => `原来是${zh}呀！Ollie真棒！`
   },
   step5: {
     invite: (word) => `我们来画一个${word}吧！`,

@@ -1,6 +1,5 @@
 /**
- * app.js - 主应用逻辑
- * 5步学习闭环
+ * app.js - 主应用逻辑（5步学习闭环）
  */
 const App = {
   currentScene: null,
@@ -9,14 +8,15 @@ const App = {
   currentStep: 0,
   isProcessing: false,
   ollieSpeech: '',
-  
+
   init() {
     updateSceneProgress();
     Canvas.init();
     Canvas.attachEvents();
     Speech.checkPermission();
+    // 不自动恢复进度，等用户点场景
   },
-  
+
   selectScene(scene) {
     this.currentScene = scene;
     const progress = Storage.getProgress();
@@ -28,7 +28,7 @@ const App = {
     }
     this.startWord();
   },
-  
+
   startWord() {
     const words = getWords(this.currentScene);
     if (this.currentWordIndex >= words.length) {
@@ -37,7 +37,7 @@ const App = {
     this.currentWord = words[this.currentWordIndex];
     this.goToStep(1);
   },
-  
+
   goToStep(step) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     const page = document.getElementById(`step${step}Page`);
@@ -51,26 +51,23 @@ const App = {
       case 5: this.runStep5(); break;
     }
   },
-  
+
   // Step1: Mimi呈现单词
   async runStep1() {
     const word = this.currentWord;
     const sceneName = this.currentScene === 'orchard' ? '果园' : this.currentScene === 'farm' ? '农场' : '森林';
-    
+
     showTextImmediate('step1Dialogue', `Ollie，我在${sceneName}里学了一个新单词！`);
     await this.delay(1000);
 
     const spelling = word.word.toUpperCase().split('').join('-');
-    try {
-      await TTS.speak(`${spelling}, ${word.word}`, { callback: () => this.showStep1Word(word) });
-    } catch (e) {
-      console.log('TTS failed, continue anyway:', e);
-      this.showStep1Word(word);
-    }
+    // TTS播放，动画从callback拆出来用setTimeout固定延迟
+    TTS.speak(`${spelling}, ${word.word}`).catch(() => {});
+    this.showStep1Word(word);
   },
-  
+
   async showStep1Word(word) {
-    // 显示字母动画
+    // 字母动画在TTS开始后固定1.5s触发，不依赖callback
     const lettersEl = document.getElementById('wordLetters');
     lettersEl.innerHTML = '';
     word.word.toUpperCase().split('').forEach((l, i) => {
@@ -80,18 +77,20 @@ const App = {
       span.style.animationDelay = `${i * 0.15}s`;
       lettersEl.appendChild(span);
     });
-    
+
     document.getElementById('wordImage').textContent = word.emoji;
     await this.delay(1500);
     showTextImmediate('step1Dialogue', '太棒了！你听到了吗？');
-    await TTS.speak('太棒了！你听到了吗？', { callback: () => this.delay(1000).then(() => this.goToStep(2)) }).catch(() => this.delay(2000).then(() => this.goToStep(2)));
+    TTS.speak('太棒了！你听到了吗？').catch(() => {});
+    await this.delay(2000);
+    this.goToStep(2);
   },
-  
+
   // Step2: Ollie跟读
   async runStep2() {
     showTextImmediate('step2Dialogue', '你跟我念一遍好吗？按住按钮说话哦~');
-    try { await TTS.speak('你跟我念一遍好吗？按住按钮说话哦~'); } catch {}
-    
+    TTS.speak('你跟我念一遍好吗？按住按钮说话哦~').catch(() => {});
+
     const recordBtn = document.getElementById('recordBtn');
     recordBtn.classList.add('waiting');
     this.bindRecordEvents(recordBtn, () => {
@@ -99,10 +98,10 @@ const App = {
       this.goToStep(3);
     });
   },
-  
+
   bindRecordEvents(btn, onStop) {
     this.unbindRecordEvents();
-    
+
     const start = async (e) => {
       e.preventDefault();
       if (this.isProcessing) return;
@@ -112,7 +111,7 @@ const App = {
       showTextImmediate('step2Dialogue', '正在听...');
       Speech.startListening((t) => { Speech.lastTranscript = t; });
     };
-    
+
     const stop = async (e) => {
       e.preventDefault();
       if (!this.isProcessing) return;
@@ -122,32 +121,32 @@ const App = {
       await this.delay(500);
       onStop();
     };
-    
+
     btn.addEventListener('touchstart', start, { passive: false });
     btn.addEventListener('touchend', stop, { passive: false });
     btn.addEventListener('mousedown', start);
     btn.addEventListener('mouseup', stop);
     this._handlers = { start, stop };
   },
-  
+
   unbindRecordEvents() {
     const btn = document.getElementById('recordBtn');
-    if (this._handlers) {
-      btn?.removeEventListener('touchstart', this._handlers.start);
-      btn?.removeEventListener('touchend', this._handlers.stop);
-      btn?.removeEventListener('mousedown', this._handlers.start);
-      btn?.removeEventListener('mouseup', this._handlers.stop);
+    if (this._handlers && btn) {
+      btn.removeEventListener('touchstart', this._handlers.start);
+      btn.removeEventListener('touchend', this._handlers.stop);
+      btn.removeEventListener('mousedown', this._handlers.start);
+      btn.removeEventListener('mouseup', this._handlers.stop);
     }
   },
-  
+
   // Step3: 评分
   async runStep3() {
     const recognized = (Speech.lastTranscript || '').toLowerCase();
     const target = this.currentWord.word.toLowerCase();
     const score = this.similarity(recognized, target);
-    
+
     const content = document.getElementById('step3Content');
-    
+
     if (score >= 0.5) {
       // 通过
       content.innerHTML = '<div class="mimi-character">🐱</div><div class="success-text">太棒了！</div>';
@@ -158,18 +157,18 @@ const App = {
         star.style.cssText = `left:150px;top:150px;--tx:${(Math.random()-0.5)*300}px;--ty:${(Math.random()-0.5)*300}px;animation-delay:${Math.random()*0.5}s;position:absolute;font-size:24px;`;
         content.appendChild(star);
       }
-      await TTS.speak('发音太棒了！').catch(() => {});
+      TTS.speak('发音太棒了！').catch(() => {});
       await this.delay(1500);
       this.goToStep(4);
     } else {
       // 失败，循环Step2
       content.innerHTML = '<div class="mimi-character">🐱</div><div class="mimi-dialogue" style="margin-top:20px;">再试一次吧，你可以的！</div>';
-      await TTS.speak('再试一次吧，你可以的！').catch(() => {});
+      TTS.speak('再试一次吧，你可以的！').catch(() => {});
       await this.delay(1500);
       this.goToStep(2);
     }
   },
-  
+
   similarity(s1, s2) {
     if (!s1 || !s2) return 0;
     if (s1 === s2) return 1;
@@ -192,58 +191,58 @@ const App = {
     }
     return (longer.length - costs[s2.length]) / longer.length;
   },
-  
+
   // Step4: Ollie教Mimi
   async runStep4() {
     showTextImmediate('step4Dialogue', 'Ollie，这个用中文怎么说呀？');
-    await TTS.speak('Ollie，这个用中文怎么说呀？').catch(() => {});
-    
+    TTS.speak('Ollie，这个用中文怎么说呀？').catch(() => {});
+
     const btn = document.getElementById('step4RecordBtn');
     btn.classList.add('waiting');
     this.bindRecordEvents(btn, async () => {
       const zh = getWordZH(this.currentWord.word);
       showTextImmediate('step4Dialogue', `原来是${zh}呀！Ollie真棒！`);
-      await TTS.speak(`原来是${zh}呀！Ollie真棒！`).catch(() => {});
+      TTS.speak(`原来是${zh}呀！Ollie真棒！`).catch(() => {});
       await this.delay(1000);
       this.goToStep(5);
     });
   },
-  
+
   // Step5: 画画
   async runStep5() {
     const word = this.currentWord;
     showToast(`我们来画一个${word.word}吧！`);
-    await TTS.speak(`我们来画一个${word.word}吧！`).catch(() => {});
-    
+    TTS.speak(`我们来画一个${word.word}吧！`).catch(() => {});
+
     Canvas.init();
     Canvas.clear();
     Canvas.drawOutline(word.word);
   },
-  
+
   async finishDrawing() {
     const word = this.currentWord;
     const scene = this.currentScene;
-    
+
     showToast('正在生成图片...');
     const imageData = await Canvas.generateAIImage(word.word, scene);
     Storage.addDiaryEntry(word.word, scene, imageData);
     Storage.markWordComplete(scene, word.word);
-    
+
     showToast(`太棒了！${word.word}画好了！🎨`);
-    await TTS.speak(`太棒了！${word.word}画好了！`).catch(() => {});
-    
+    TTS.speak(`太棒了！${word.word}画好了！`).catch(() => {});
+
     updateSceneProgress();
     this.currentWordIndex++;
-    
+
     await this.delay(2000);
     this.startWord();
   },
-  
+
   showSceneComplete() {
     showToast('🎉 这个场景学完啦！');
     this.goHome();
   },
-  
+
   goHome() {
     this.currentScene = null;
     this.currentWord = null;
@@ -251,12 +250,12 @@ const App = {
     document.getElementById('homePage').classList.add('active');
     updateSceneProgress();
   },
-  
+
   goBack() {
     if (this.currentStep > 1) this.goToStep(this.currentStep - 1);
     else this.goHome();
   },
-  
+
   openDiary() {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('diaryPage').classList.add('active');
@@ -268,7 +267,7 @@ const App = {
     }
     grid.innerHTML = diary.map(e => `<div class="diary-item completed"><span class="diary-word">${e.word}</span><span class="diary-image">${getWordEmoji(e.word)}</span></div>`).join('');
   },
-  
+
   delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 };
 
@@ -282,5 +281,5 @@ window.finishDrawing = () => App.finishDrawing();
 window.clearCanvas = () => { Canvas.clear(); Canvas.drawOutline(App.currentWord?.word); };
 window.replayWord = async () => {
   const w = App.currentWord;
-  if (w) await TTS.speak(`${w.word.toUpperCase().split('').join('-')}, ${w.word}`).catch(() => {});
+  if (w) TTS.speak(`${w.word.toUpperCase().split('').join('-')}, ${w.word}`).catch(() => {});
 };
