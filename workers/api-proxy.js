@@ -42,6 +42,49 @@ async function handleTTS(request) {
   });
 }
 
+// ASR语音识别（短音频转文字）
+async function handleASR(request) {
+  const apiKey = MINIMAX_API_KEY;
+  const formData = await request.formData();
+  const audioFile = formData.get('file');
+  const model = formData.get('model') || 'speech-02-hd';
+
+  if (!audioFile) {
+    return new Response(JSON.stringify({ error: 'No audio file' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
+  }
+
+  // 构造发给 MiniMax 的 FormData
+  const miniForm = new FormData();
+  miniForm.append('file', audioFile);
+  miniForm.append('model', model);
+  miniForm.append('language', 'en');
+
+  const response = await fetch(`${MINIMAX_API_BASE}/v1/audio/transcriptions`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`
+      // 注意：FormData 自己会设置正确的 Content-Type（multipart/form-data）
+    },
+    body: miniForm
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    return new Response(JSON.stringify({ error }), { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+  }
+
+  const result = await response.json();
+  // 兼容 OpenAI 格式：{ text: "..." }
+  return new Response(JSON.stringify({
+    text: result.text || result.result?.text || ''
+  }), {
+    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+  });
+}
+
 // AI图片生成
 async function handleImage(request) {
   const { prompt, size = '1024x1024' } = await request.json();
@@ -94,6 +137,8 @@ async function router(request) {
       return await handleTTS(request);
     } else if (path === '/api/image') {
       return await handleImage(request);
+    } else if (path === '/api/asr') {
+      return await handleASR(request);
     } else {
       return new Response(JSON.stringify({ error: 'Not found' }), { status: 404 });
     }

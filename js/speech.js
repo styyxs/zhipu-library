@@ -1,132 +1,107 @@
 /**
- * speech.js - 语音识别（浏览器原生webkitSpeechAPI）
+ * speech.js - 语音识别（MiniMax ASR）
+ * 麦克风录音 → Worker /api/asr → MiniMax ASR → 文字
  */
 const Speech = {
-  recognition: null,
+  mediaRecorder: null,
+  audioChunks: [],
   lastTranscript: '',
   isListening: false,
   onResult: null,
-  _isStarting: false,   // 确保初始值是 false，不是 undefined
-  _isStopping: false,   // 确保初始值是 false，不是 undefined
 
-  checkPermission() {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      console.log('Speech recognition not supported');
-    }
+  // 初始化麦克风录音
+  initRecorder() {
+    return navigator.mediaDevices.getUserMedia({ audio: true });
   },
 
-  async requestMicPermission() {
+  // 录音并通过 Worker ASR 识别
+  async startListening(onResult) {
+    if (this.isListening) {
+      console.log('[Speech] already listening, ignored');
+      return;
+    }
+    this.onResult = onResult || null;
+    this.lastTranscript = '';
+    this.audioChunks = [];
+    this.isListening = true;
+    console.log('[Speech] startListening: requesting mic...');
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(t => t.stop());
-      return true;
-    } catch (e) {
-      console.log('Mic permission denied:', e.message);
-      return false;
-    }
-  },
+      const stream = await this.initRecorder();
 
-  init() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      console.log('SpeechRecognition not supported in this browser');
-      return;
-    }
-    this.recognition = new SpeechRecognition();
-    this.recognition.lang = 'en-US';
-    this.recognition.continuous = false;
-    this.recognition.interimResults = false;
-    this.recognition.maxAlternatives = 1;
+      // 尝试设置 MediaRecorder，优先用 webm/opus（兼容性最广）
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : 'audio/webm';
 
-    this.recognition.onresult = (event) => {
-      // 如果已经在停止中（stop已调用），忽略后续onresult
-      if (this._isStopping) {
-        console.log('[Speech] onresult ignored (_isStopping=true), result count:', event.results.length);
-        return;
-      }
-      const result = event.results[0];
-      console.log('[Speech] onresult: isFinal=' + result.isFinal + ', transcript="' + result[0].transcript + '", confidence=' + result[0].confidence);
-      const transcript = result[0].transcript.trim();
-      this.lastTranscript = transcript;
-      if (this.onResult) this.onResult(transcript);
-    };
+      this.mediaRecorder = new MediaRecorder(stream, { mimeType });
+      console.log('[Speech] MediaRecorder mimeType:', mimeType);
 
-    this.recognition.onerror = (event) => {
-      console.log('[Speech] Recognition error:', event.error, '| _isStopping:', this._isStopping);
-      this.isListening = false;
-      this._isStopping = false;
-      this._isStarting = false;
-    };
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          this.audioChunks.push(event.data);
+          console.log('[Speech] chunk received, size:', event.data.size);
+        }
+      };
 
-    this.recognition.onstart = () => {
-      console.log('[Speech] Recognition started | _isStopping:', this._isStopping);
-    };
-
-    this.recognition.onend = () => {
-      console.log('[Speech] Recognition ended | lastTranscript:', this.lastTranscript, '| _isStopping:', this._isStopping);
-      this.isListening = false;
-      this._isStopping = false;
-      this._isStarting = false;
-    };
-  },
-
-  startListening(onResult) {
-    if (!this.recognition) this.init();
-    if (!this.recognition) return;
-    if (this._isStarting) {
-      console.log('[Speech] startListening blocked (_isStarting=true)');
-      return;
-    }
-    this._isStarting = true;
-    console.log('[Speech] startListening called | isListening:', this.isListening, '| state:', this.recognition?.state, '| _isStopping:', this._isStopping);
-
-    const doStart = () => {
-      this._isStarting = false;
-      this.onResult = onResult || null;
-      this.lastTranscript = '';
-      this.isListening = true;
-      console.log('[Speech] doStart calling recognition.start() | state before:', this.recognition?.state);
-      try {
-        this.recognition.start();
-      } catch (e) {
-        console.log('[Speech] Start error:', e.message, '| state:', this.recognition?.state);
+      this.mediaRecorder.onstop = async () => {
+        console.log('[Speech] MediaRecorder stopped, chunks:', this.audioChunks.length);
+        stream.getTracks().forEach(t => t.stop());
         this.isListening = false;
-        this._isStarting = false;
-      }
-    };
 
-    // 如果上一个识别还在停止中，等它
-    if (this._isStopping) {
-      const checkAndStart = () => {
-        if (!this._isStopping) { doStart(); return; }
-        setTimeout(checkAndStart, 50);
-      };
-      checkAndStart();
-      return;
-    }
+        if (this.audioChunks.length === 0) {
+          console.log('[Speech] no audio recorded');
+          if (this.onResult) this.onResult('');
+          return;
+        }
 
-    // 如果识别还在运行，先停止再启动
-    if (this.isListening || this.recognition.state === 'running') {
-      this._isStopping = true;
-      const prevOnEnd = this.recognition.onend;
-      this.recognition.onend = () => {
-        if (prevOnEnd) prevOnEnd.call(this.recognition);
-        this._isStopping = false;
-        doStart();
+        // 发送录音到 Worker ASR
+        const blob = new Blob(this.audioChunks, { type: mimeType });
+        console.log('[Speech] sending audio to ASR, blob size:', blob.size);
+        try {
+          const formData = new FormData();
+          formData.append('file', blob, 'recording.' + (mimeType.includes('mp4') ? 'mp4' : 'webm'));
+          formData.append('model', 'speech-02-hd');
+          formData.append('language', 'en');
+
+          const resp = await fetch('/api/asr', { method: 'POST', body: formData });
+          const data = await resp.json();
+          const transcript = (data.text || '').trim();
+          this.lastTranscript = transcript;
+          console.log('[Speech] ASR result:', JSON.stringify(transcript));
+          if (this.onResult) this.onResult(transcript);
+        } catch (e) {
+          console.log('[Speech] ASR error:', e.message);
+          if (this.onResult) this.onResult('');
+        }
       };
-      try { this.recognition.stop(); } catch {}
-    } else {
-      doStart();
+
+      this.mediaRecorder.start();
+      console.log('[Speech] MediaRecorder started');
+    } catch (e) {
+      console.log('[Speech] mic error:', e.message);
+      this.isListening = false;
+      if (this.onResult) this.onResult('');
     }
   },
 
   stopListening() {
-    console.log('[Speech] stopListening called | isListening:', this.isListening, '| state:', this.recognition?.state, '| _isStopping:', this._isStopping);
-    this._isStopping = true;
-    this._isStarting = false;
-    if (this.recognition && this.isListening) {
-      try { this.recognition.stop(); } catch (e) { console.log('[Speech] stop() error:', e.message); }
+    console.log('[Speech] stopListening called, state:', this.mediaRecorder?.state);
+    if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+      this.mediaRecorder.stop();
+    } else {
+      this.isListening = false;
+    }
+  },
+
+  // 清理
+  destroy() {
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.state === 'recording' && this.mediaRecorder.stop();
     }
     this.isListening = false;
+    this.audioChunks = [];
   }
 };
