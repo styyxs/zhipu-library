@@ -6,6 +6,8 @@ const Speech = {
   lastTranscript: '',
   isListening: false,
   onResult: null,
+  _isStarting: false,   // 确保初始值是 false，不是 undefined
+  _isStopping: false,   // 确保初始值是 false，不是 undefined
 
   checkPermission() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
