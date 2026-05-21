@@ -13,7 +13,7 @@ const App = {
     updateSceneProgress();
     Canvas.init();
     Canvas.attachEvents();
-    Speech.checkPermission();
+    Speech.init(); // 显式初始化语音识别
     // 不自动恢复进度，等用户点场景
   },
 
@@ -107,6 +107,10 @@ const App = {
     const start = async (e) => {
       e.preventDefault();
       if (this.isProcessing) return;
+      // 防止iPad上touchstart和mousedown重复触发
+      if (this._inputStarted) return;
+      this._inputStarted = true;
+      setTimeout(() => { this._inputStarted = false; }, 1000);
       this.isProcessing = true;
       btn.classList.remove('waiting');
       btn.classList.add('recording');
@@ -124,6 +128,7 @@ const App = {
       onStop();
     };
 
+    // 同时监听touch和mouse，触屏和PC都能用
     btn.addEventListener('touchstart', start, { passive: false });
     btn.addEventListener('touchend', stop, { passive: false });
     btn.addEventListener('mousedown', start);
@@ -146,6 +151,7 @@ const App = {
     const recognized = (Speech.lastTranscript || '').toLowerCase();
     const target = this.currentWord.word.toLowerCase();
     const score = this.similarity(recognized, target);
+    console.log('[Step3] recognized:', JSON.stringify(recognized), '| target:', target, '| score:', score);
 
     const content = document.getElementById('step3Content');
 
