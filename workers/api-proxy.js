@@ -7,7 +7,7 @@ const MINIMAX_API_BASE = 'https://api.minimaxi.com';
 
 // TTS语音合成
 async function handleTTS(request) {
-  const { text, voice = 'Annie', speed = 0.9 } = await request.json();
+  const { text, voice = 'female-shaonv', speed = 0.9 } = await request.json();
   const apiKey = MINIMAX_API_KEY;
 
   const response = await fetch(`${MINIMAX_API_BASE}/v1/t2a_v2`, {
@@ -17,7 +17,7 @@ async function handleTTS(request) {
       'Authorization': `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: 'speech-02-hd',
+      model: 'speech-2.8-hd',
       text: text,
       stream: false,
       voice_setting: {

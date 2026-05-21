@@ -52,6 +52,11 @@ const Speech = {
   startListening(onResult) {
     if (!this.recognition) this.init();
     if (!this.recognition) return;
+    // 防止重复启动
+    if (this.isListening) {
+      console.log('Already listening, ignoring start');
+      return;
+    }
     this.onResult = onResult || null;
     this.lastTranscript = '';
     this.isListening = true;
