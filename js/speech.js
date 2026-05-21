@@ -13,6 +13,17 @@ const Speech = {
     }
   },
 
+  async requestMicPermission() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+      return true;
+    } catch (e) {
+      console.log('Mic permission denied:', e.message);
+      return false;
+    }
+  },
+
   init() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;

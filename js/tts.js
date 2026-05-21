@@ -30,7 +30,7 @@ const TTS = {
     const response = await fetch(`${API_BASE}/api/tts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, voice: 'Annie', speed: speed || 0.9 })
+      body: JSON.stringify({ text, voice: 'female-shaonv', speed: speed || 0.9 })
     });
 
     if (!response.ok) throw new Error('TTS API failed');

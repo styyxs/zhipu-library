@@ -61,13 +61,20 @@ const App = {
     await this.delay(1000);
 
     const spelling = word.word.toUpperCase().split('').join('-');
-    // TTS播放，动画从callback拆出来用setTimeout固定延迟
-    TTS.speak(`${spelling}, ${word.word}`).catch(() => {});
+    const wordTTS = `${spelling}, ${word.word}`;
+    // 先开始字母动画
     this.showStep1Word(word);
+    // 等TTS开始后，根据文字长度估算播放时长再等
+    const estimatedDuration = wordTTS.length * 120 + 1500; // 中英混合估算
+    await TTS.speak(wordTTS).catch(() => {});
+    await this.delay(Math.max(0, estimatedDuration - 1500)); // 减掉TTS.speak本身的延迟
+    showTextImmediate('step1Dialogue', '太棒了！你听到了吗？');
+    await TTS.speak('太棒了！你听到了吗？').catch(() => {});
+    await this.delay(800);
+    this.goToStep(2);
   },
 
   async showStep1Word(word) {
-    // 字母动画在TTS开始后固定1.5s触发，不依赖callback
     const lettersEl = document.getElementById('wordLetters');
     lettersEl.innerHTML = '';
     word.word.toUpperCase().split('').forEach((l, i) => {
@@ -79,11 +86,6 @@ const App = {
     });
 
     document.getElementById('wordImage').textContent = word.emoji;
-    await this.delay(1500);
-    showTextImmediate('step1Dialogue', '太棒了！你听到了吗？');
-    TTS.speak('太棒了！你听到了吗？').catch(() => {});
-    await this.delay(2000);
-    this.goToStep(2);
   },
 
   // Step2: Ollie跟读
