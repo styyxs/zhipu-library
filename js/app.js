@@ -13,7 +13,7 @@ const App = {
     updateSceneProgress();
     Canvas.init();
     Canvas.attachEvents();
-    Speech.init(); // 显式初始化语音识别
+    Speech.checkPermission?.(); // 仅检查兼容性
     // 不自动恢复进度，等用户点场景
   },
 
