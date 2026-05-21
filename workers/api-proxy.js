@@ -3,7 +3,7 @@
  * 解决CORS问题 + 隐藏API Key
  */
 
-const MINIMAX_API_BASE = 'https://api.minimax.io';
+const MINIMAX_API_BASE = 'https://api.minimaxi.com';
 
 // TTS语音合成
 async function handleTTS(request) {
