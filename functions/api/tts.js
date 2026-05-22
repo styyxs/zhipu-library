@@ -51,7 +51,12 @@ export async function onRequestPost(context) {
     }
 
     const audioData = await response.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(audioData)));
+    const bytes = new Uint8Array(audioData);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = btoa(binary);
 
     return new Response(JSON.stringify({
       audioData: `data:audio/mp3;base64,${base64}`
