@@ -25,7 +25,7 @@ export async function onRequestPost(context) {
       });
     }
 
-    const response = await fetch('https://api.minimax.io/v1/image_generation', {
+    const response = await fetch('https://api.minimaxi.com/v1/images/generations', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

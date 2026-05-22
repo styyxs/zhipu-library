@@ -25,14 +25,14 @@ export async function onRequestPost(context) {
       });
     }
 
-    const response = await fetch('https://api.minimax.io/v1/t2a_v2', {
+    const response = await fetch('https://api.minimaxi.com/v1/t2a_v2', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'speech-02-hd',
+        model: 'speech-2.8-hd',
         text: text,
         stream: false,
         voice_setting: {
