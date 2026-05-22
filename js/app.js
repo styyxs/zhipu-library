@@ -90,8 +90,8 @@ const App = {
 
   // Step2: Ollie跟读
   async runStep2() {
-    showTextImmediate('step2Dialogue', '你跟我念一遍好吗？按住按钮说话哦~');
-    TTS.speak('你跟我念一遍好吗？按住按钮说话哦~').catch(() => {});
+    showTextImmediate('step2Dialogue', '你跟我念一遍好吗？点一下按钮开始说话~');
+    TTS.speak('你跟我念一遍好吗？点一下按钮开始说话~').catch(() => {});
 
     const recordBtn = document.getElementById('recordBtn');
     recordBtn.classList.add('waiting');
@@ -107,42 +107,33 @@ const App = {
     const start = async (e) => {
       e.preventDefault();
       if (this.isProcessing) return;
-      // 防止iPad上touchstart和mousedown重复触发
       if (this._inputStarted) return;
       this._inputStarted = true;
-      setTimeout(() => { this._inputStarted = false; }, 1000);
+      setTimeout(() => { this._inputStarted = false; }, 2000);
       this.isProcessing = true;
       btn.classList.remove('waiting');
       btn.classList.add('recording');
       showTextImmediate('step2Dialogue', '正在听...');
-      Speech.startListening((t) => { Speech.lastTranscript = t; });
+      Speech.startListening(
+        (t) => { Speech.lastTranscript = t; },
+        () => {
+          btn.classList.remove('recording');
+          this.isProcessing = false;
+          setTimeout(() => onStop(), 500);
+        }
+      );
     };
 
-    const stop = async (e) => {
-      e.preventDefault();
-      if (!this.isProcessing) return;
-      Speech.stopListening();
-      btn.classList.remove('recording');
-      this.isProcessing = false;
-      await this.delay(500);
-      onStop();
-    };
-
-    // 同时监听touch和mouse，触屏和PC都能用
     btn.addEventListener('touchstart', start, { passive: false });
-    btn.addEventListener('touchend', stop, { passive: false });
     btn.addEventListener('mousedown', start);
-    btn.addEventListener('mouseup', stop);
-    this._handlers = { start, stop };
+    this._handlers = { start };
   },
 
   unbindRecordEvents() {
     const btn = document.getElementById('recordBtn');
     if (this._handlers && btn) {
       btn.removeEventListener('touchstart', this._handlers.start);
-      btn.removeEventListener('touchend', this._handlers.stop);
       btn.removeEventListener('mousedown', this._handlers.start);
-      btn.removeEventListener('mouseup', this._handlers.stop);
     }
   },
 
